@@ -1,0 +1,10 @@
+[project]
+name = "agenda"
+version = "0.1.0"
+description = "Task manager for Telegram. Plan, organize, and complete."
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "aiogram>=3.23.0",
+    "sqlalchemy>=2.0.45",
+]
