@@ -1,12 +1,19 @@
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy import BigInteger
 
-from .base import Base
+from typing import List
+
+from .base import BaseModel
 
 
-
-class User(Base):
+class User(BaseModel):
     __tablename__ = 'users'
     tg_id: Mapped[int] = mapped_column(BigInteger, unique=True)
     name: Mapped[str] = mapped_column()
 
+    tasks: Mapped[List["Task"]] = relationship(
+        "Task", 
+        back_populates="user",
+        cascade="all, delete-orphan",
+        lazy="selectin"
+    )

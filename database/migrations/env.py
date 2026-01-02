@@ -15,8 +15,8 @@ if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
 try:
-    from database.models import Base
-    target_metadata = Base.metadata
+    from database.models import BaseModel
+    target_metadata = BaseModel.metadata
 except ImportError:
     target_metadata = None
 
