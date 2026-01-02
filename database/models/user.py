@@ -9,8 +9,6 @@ from .base import BaseModel
 class User(BaseModel):
     __tablename__ = 'users'
     tg_id: Mapped[int] = mapped_column(BigInteger, unique=True)
-    name: Mapped[str] = mapped_column()
-
     tasks: Mapped[List["Task"]] = relationship(
         "Task", 
         back_populates="user",

@@ -5,6 +5,9 @@ from core.enums import TaskStatus, TaskPriority, NotificationType
 from .base import BaseModel
 from .user import User
 import datetime
+
+
+
 class Task(BaseModel):
     __tablename__ = 'tasks'
     user_id: Mapped[int] = mapped_column(ForeignKey('users.id',     ondelete='CASCADE'))
