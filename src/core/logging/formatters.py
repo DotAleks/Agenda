@@ -1,7 +1,7 @@
 import logging
 import json
 from datetime import datetime
-from shared.enums import LogColor
+from src.shared.enums import LogColor
 
 
 class BaseFormatter(logging.Formatter):

@@ -1,10 +1,20 @@
 from .logger_factory import LoggerFactory
 from .logger import Logger
+from src.core.config import LoggingSettings
 
 
 factory = LoggerFactory()
-# TODO: Добавить настройки из core.config/*
-# factory.configure(level=LogLevel.Debug)
+
+
+def configure_logging(settings: LoggingSettings):
+    """Configure the global logger factory using LoggingSettings."""
+    factory.configure(
+        level=settings.level,
+        log_to_file=settings.log_to_file,
+        log_dir=settings.log_dir,
+        console_formatter=settings.console_formatter,
+        file_formatter=settings.file_formatter,
+    )
 
 
 def get_logger(name: str) -> Logger:

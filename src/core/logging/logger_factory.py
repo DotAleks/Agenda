@@ -5,7 +5,7 @@ from pathlib import Path
 
 from .formatters import JsonFormatter, ColorFormatter, BaseFormatter
 from .logger import Logger
-from shared.enums import LogLevel, LogFormatter
+from src.shared.enums import LogLevel, LogFormatter
 
 
 FORMATTER_FACTORIES = {

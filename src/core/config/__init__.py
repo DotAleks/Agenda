@@ -1,1 +1,3 @@
-__all__ = []
+from .logging_settings import LoggingSettings
+
+__all__ = ["LoggingSettings"]
