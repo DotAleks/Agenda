@@ -1,7 +1,5 @@
 import logging
 
-# TODO: Почистить код: доки, импорты, todo
-
 
 class Logger:
     """A wrapper around the standard Python logger with support for additional parameters.
@@ -38,5 +36,20 @@ class Logger:
         self._logger.critical(message, extra=extra)
 
     def exception(self, message: str, **extra):
-        """"""
+        """Log a message with level ERROR, including the current exception traceback.
+
+        This method should only be called from within an `except` block.
+        It automatically sets `exc_info=True`.
+
+        Args:
+            msg (str): The message to log.
+            *args: Positional arguments for message formatting.
+            **kwargs: Additional keyword arguments passed to the logger.
+
+        Example:
+            try:
+                1 / 0
+            except ZeroDivisionError:
+                logger.exception("Division by zero occurred")
+        """
         self._logger.exception(message, extra=extra)

@@ -1,10 +1,18 @@
 import sys
 import logging
-from typing import Dict
+from typing import Dict, Any
 from pathlib import Path
 
 from .formatters import JsonFormatter, ColorFormatter, BaseFormatter
 from .logger import Logger
+from shared.enums import LogLevel, LogFormatter
+
+
+FORMATTER_FACTORIES = {
+    LogFormatter.JSON: JsonFormatter,
+    LogFormatter.COLOR: ColorFormatter,
+    LogFormatter.BASE: BaseFormatter,
+}
 
 
 class LoggerFactory:
@@ -14,52 +22,37 @@ class LoggerFactory:
     application with support for multiple output formats (JSON, colored console,
     plain text) and destinations (console, file).
 
-    The factory implements the singleton pattern for loggers - requesting a
+    The factory implements a singleton pattern for loggers — requesting a
     logger with the same name multiple times returns the same instance.
 
     Attributes:
-        _cache: Dictionary mapping logger names to Logger instances.
-        _configured: Boolean flag indicating if logging system is configured.
-        _config: Current configuration dictionary for the logging system.
-
-    Example:
-        >>> factory = LoggerFactory()
-        >>> factory.configure(level="DEBUG", log_to_file=True)
-        >>> logger = factory.create("myapp.module")
-        >>> logger.info("Application started")
+        _cache: Dict mapping logger names to Logger instances.
+        _is_configured: Boolean flag indicating if logging system is configured.
+        _settings: Dict with current logging configuration.
     """
 
     def __init__(self):
         self._cache: Dict[str, Logger] = {}
-        self._configured = False
+        self._is_configured = False
 
-        self._config = {
-            "level": "INFO",
+        self._settings: Dict[str, Any] = {
+            "level": LogLevel.INFO,
             "log_to_file": False,
-            "log_dir": "logs",
-            "json_format": False,
-            "color_output": True,
-            "file_formatter": "json",
+            "log_dir": Path("logs"),
+            "console_formatter": LogFormatter.BASE,
+            "file_formatter": LogFormatter.JSON,
         }
 
-    def _setup_logging(self) -> None:
-        """Configures the logging system."""
-        if self._configured:
+    def _configure_root_logger(self) -> None:
+        """Configure the root logger based on current settings."""
+        if self._is_configured:
             return
 
-        if self._config["log_to_file"]:
-            log_path = Path(self._config["log_dir"])
+        log_level = self._settings["level"].to_logging_level()
+
+        if self._settings["log_to_file"]:
+            log_path = Path(self._settings["log_dir"])
             log_path.mkdir(parents=True, exist_ok=True)
-
-        level_str = self._config["level"].upper()
-        valid_levels = ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
-        if level_str not in valid_levels:
-            raise ValueError(
-                f"Incorrect logging level: {level_str}. "
-                f"Valid values: {valid_levels}"
-            )
-
-        log_level = getattr(logging, level_str)
 
         root_logger = logging.getLogger()
         root_logger.setLevel(log_level)
@@ -70,88 +63,77 @@ class LoggerFactory:
 
         console_handler = logging.StreamHandler(sys.stdout)
         console_handler.setLevel(log_level)
-
-        if self._config.get("json_format"):
-            console_formatter = self._get_formatter("json")
-        elif self._config.get("color_output", True):
-            console_formatter = self._get_formatter("color")
-        else:
-            console_formatter = self._get_formatter("base")
-
-        console_handler.setFormatter(console_formatter)
+        console_handler.setFormatter(
+            self._create_formatter(self._settings["console_formatter"])
+        )
         root_logger.addHandler(console_handler)
 
-        if self._config["log_to_file"]:
+        if self._settings["log_to_file"]:
             file_handler = logging.FileHandler(
-                Path(self._config["log_dir"]) / "app.log", encoding="utf-8"
+                Path(self._settings["log_dir"]) / "app.log", encoding="utf-8"
             )
             file_handler.setLevel(log_level)
-
-            file_formatter_type = self._config.get("file_formatter", "json")
-            file_formatter = self._get_formatter(file_formatter_type)
-
-            file_handler.setFormatter(file_formatter)
+            file_handler.setFormatter(
+                self._create_formatter(
+                    self._settings.get("file_formatter", LogFormatter.JSON)
+                )
+            )
             root_logger.addHandler(file_handler)
 
-    def _get_formatter(self, formatter_type: str = "base") -> logging.Formatter:
-        """Creates a formatter of the specified type."""
-        formatter_map = {
-            "json": JsonFormatter,
-            "color": ColorFormatter,
-            "base": BaseFormatter,
-        }
+        self._is_configured = True
 
-        formatter_class = formatter_map.get(formatter_type.lower())
-        if formatter_class is None:
-            raise ValueError(
-                f"Unknown formatter type: {formatter_type}. "
-                f"Available types: {list(formatter_map.keys())}"
-            )
-
-        return formatter_class()
+    def _create_formatter(
+        self, formatter: LogFormatter = LogFormatter.BASE
+    ) -> logging.Formatter:
+        """Return a logging.Formatter instance based on the enum."""
+        try:
+            return FORMATTER_FACTORIES[formatter]()
+        except KeyError:
+            raise ValueError(f"Unsupported formatter: {formatter}")
 
     def configure(self, **config) -> None:
-        """Updates the logging configuration with new settings.
+        """Update logging settings. Existing loggers are not affected until cleared.
 
-        This method updates the factory's configuration but does not immediately
-        apply changes to existing loggers. The new configuration will be applied
-        when the next logger is requested via the `create()` method.
-
-        Important:
-            After calling configure(), existing logger instances in cache will
-            continue to use old configuration. To ensure all loggers use the new
-            configuration, call `clear_cache()` after configuration changes.
-
-        Args:
-            **config: Keyword arguments specifying configuration options.
-                Supported options:
-                - level (str): Logging level (DEBUG, INFO, WARNING, ERROR,
-                               CRITICAL). Default: "INFO".
-                - log_to_file (bool): Enable file logging. Default: False.
-                - log_dir (str): Directory for log files. Default: "logs".
-                - json_format (bool): Use JSON format for console output.
-                                     Default: False.
-                - color_output (bool): Use colored output in console.
-                                      Default: True.
-                - file_formatter (str): Formatter for file output ("json",
-                                       "color", "base"). Default: "json".
-
-        Example:
-            >>> factory.configure(level="DEBUG", log_to_file=True)
-            >>> factory.configure(color_output=False, json_format=True)
-
-        Note:
-            Invalid configuration keys are ignored (not added to config).
+        Supported kwargs:
+            - level (LogLevel): Logging level
+            - log_to_file (bool): Enable file logging
+            - log_dir (Path or str): Directory for log files
+            - console_formatter (LogFormatter): Formatter for console output
+            - file_formatter (LogFormatter): Formatter for file output
         """
-        self._config.update(config)
-        self._configured = False
+        if "level" in config:
+            level = config["level"]
+            if isinstance(level, str):
+                config["level"] = LogLevel(level.upper())
 
-    def create(self, name: str) -> Logger:
-        """Creates or returns an existing logger."""
-        if not self._configured:
-            self._setup_logging()
-            self._configured = True
+        if "console_formatter" in config:
+            cf = config["console_formatter"]
+            if isinstance(cf, str):
+                config["console_formatter"] = LogFormatter(cf.lower())
+
+        if "file_formatter" in config:
+            ff = config["file_formatter"]
+            if isinstance(ff, str):
+                config["file_formatter"] = LogFormatter(ff.lower())
+
+        if "log_dir" in config:
+            log_dir = config["log_dir"]
+            if isinstance(log_dir, str):
+                config["log_dir"] = Path(log_dir)
+
+        self._settings.update(config)
+        self._is_configured = False
+
+    def get_logger(self, name: str) -> Logger:
+        """Return a Logger instance. Configures logging on first call."""
+        if not self._is_configured:
+            self._configure_root_logger()
 
         if name not in self._cache:
             self._cache[name] = Logger(name)
         return self._cache[name]
+
+    def clear_cache(self) -> None:
+        """Clear cached logger instances and reset configuration flag."""
+        self._cache.clear()
+        self._is_configured = False

@@ -1,6 +1,7 @@
 import logging
 import json
 from datetime import datetime
+from shared.enums import LogColor
 
 
 class BaseFormatter(logging.Formatter):
@@ -37,17 +38,15 @@ class JsonFormatter(BaseFormatter):
 class ColorFormatter(BaseFormatter):
     """Formatter for color output to the console"""
 
-    COLORS = {
-        "DEBUG": "\033[36m",  # Cyan
-        "INFO": "\033[32m",  # Green
-        "WARNING": "\033[33m",  # Yellow
-        "ERROR": "\033[31m",  # Red
-        "CRITICAL": "\033[35m",  # Magenta
+    LEVEL_COLOR = {
+        logging.DEBUG: LogColor.CYAN,
+        logging.INFO: LogColor.GREEN,
+        logging.WARNING: LogColor.YELLOW,
+        logging.ERROR: LogColor.RED,
+        logging.CRITICAL: LogColor.MAGENTA,
     }
 
-    def format(self, record: logging.LogRecord) -> str:
-        color = self.COLORS.get(record.levelname, "")
-
-        formatted_message = super().format(record)
-
-        return f"{color}{formatted_message}\033[0m"
+    def format(self, record):
+        color = self.LEVEL_COLOR.get(record.levelno, LogColor.RESET)
+        message = super().format(record)
+        return f"{color}{message}{LogColor.RESET}"
