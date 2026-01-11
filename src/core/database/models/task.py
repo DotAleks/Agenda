@@ -30,5 +30,5 @@ class Task(BaseModel):
     cron_expression: Mapped[str] = mapped_column(String(50))
     next_trigger: Mapped[Optional[datetime]] = mapped_column(nullable=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
-
+    chat_id: Mapped[int] = mapped_column()
     user: Mapped["User"] = relationship(back_populates="tasks")  # type: ignore

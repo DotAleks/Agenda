@@ -15,12 +15,12 @@ class DatabaseEngine:
 
     Attributes:
         engine (AsyncEngine): SQLAlchemy asynchronous database engine
-        async_session (async_sessionmaker[AsyncSession]): Factory for creating async sessions
+        async_sessionmaker (async_sessionmaker[AsyncSession]): Factory for creating async sessions
     """
 
     def __init__(self, settings: DatabaseSettings):  # type: ignore TODO: убрать когда буде написан класс
         self.engine: AsyncEngine = create_async_engine(settings.database_url, echo=True)
-        self.async_session = async_sessionmaker(
+        self.async_sessionmaker = async_sessionmaker(
             self.engine, expire_on_commit=False, class_=AsyncSession
         )
 
