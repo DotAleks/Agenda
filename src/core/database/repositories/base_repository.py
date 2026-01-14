@@ -3,6 +3,7 @@ from typing import Type, TypeVar, Any, Generic, Optional, List
 from sqlalchemy import select
 from src.core.database.models import BaseModel
 
+
 ModelType = TypeVar("ModelType", bound="BaseModel")
 
 
@@ -46,3 +47,11 @@ class BaseRepository(Generic[ModelType]):
         await self.session.delete(model)
 
         return True
+
+    async def _update(self, model: ModelType, **kwargs) -> ModelType:
+        for key, value in kwargs.items():
+            setattr(model, key, value)
+
+        await self.session.flush()
+        await self.session.refresh(model)
+        return model
