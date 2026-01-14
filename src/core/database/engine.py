@@ -4,6 +4,8 @@ from sqlalchemy.ext.asyncio import (
     create_async_engine,
     async_sessionmaker,
 )
+from src.core.config import DatabaseSettings
+from dotenv import load_dotenv
 
 
 class DatabaseEngine:
@@ -18,8 +20,8 @@ class DatabaseEngine:
         async_sessionmaker (async_sessionmaker[AsyncSession]): Factory for creating async sessions
     """
 
-    def __init__(self, settings: DatabaseSettings):  # type: ignore TODO: убрать когда буде написан класс
-        self.engine: AsyncEngine = create_async_engine(settings.database_url, echo=True)
+    def __init__(self, settings: DatabaseSettings):
+        self.engine: AsyncEngine = create_async_engine(settings.url, echo=settings.echo)
         self.async_sessionmaker = async_sessionmaker(
             self.engine, expire_on_commit=False, class_=AsyncSession
         )
@@ -27,3 +29,9 @@ class DatabaseEngine:
     async def dispose(self) -> None:
         """Dispose the database engine and cleanup connection pool."""
         await self.engine.dispose()
+
+
+load_dotenv()
+db_settings = DatabaseSettings()  # type: ignore
+
+db_engine = DatabaseEngine(db_settings)

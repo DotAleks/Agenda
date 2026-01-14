@@ -6,17 +6,13 @@ from urllib.parse import quote_plus
 class DatabaseSettings(BaseSettings):
     """"""
 
-    driver: str = Field(alias="DB_DRIVER")
+    driver: str = Field("postgresql+asyncpg", alias="DB_DRIVER")
     host: str = Field("localhost", alias="DB_HOST")
     port: int = Field(5432, alias="DB_PORT")
-    user: str = Field(alias="DB_USER")
-    password: str = Field(alias="DB_PASSWD")
-    database: str = Field(alias="DB_NAME")
+    user: str = Field("", alias="DB_USER")
+    password: str = Field("", alias="DB_PASSWD")
+    database: str = Field("", alias="DB_NAME")
     echo: bool = Field(False, alias="DB_ECHO")
-
-    class Config:
-        env_file = ".env"
-        env_file_encoding = "utf-8"
 
     @property
     def url(self) -> str:

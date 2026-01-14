@@ -1,4 +1,4 @@
-from src.core.database import db_engine
+from src.core.database.engine import db_engine
 from src.core.logging import get_logger
 from .models import BaseModel
 
